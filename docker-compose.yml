@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # 1. MySQL Relational Database
+  mysql:
+    image: mysql:8.0
+    container_name: delivery_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: delivery_db
+      MYSQL_USER: delivery_user
+      MYSQL_PASSWORD: delivery_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - delivery_network
+
+  # 2. Node.js Express Microservices Backend (With Live Code Sync)
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: delivery_backend
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    environment:
+      PORT: 5001
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: rootpassword
+      DB_NAME: delivery_db
+      AZURE_SERVICE_BUS_CONNECTION_STRING: ${AZURE_SERVICE_BUS_CONNECTION_STRING:-}
+      SERVICE_BUS_TOPIC: ${SERVICE_BUS_TOPIC:-delivery-saga-topic}
+    ports:
+      - "5001:5001"
+    networks:
+      - delivery_network
+
+  # 3. React Frontend
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: delivery_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "3100:80"
+    networks:
+      - delivery_network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  delivery_network:
+    driver: bridge

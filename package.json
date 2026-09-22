@@ -1,0 +1,16 @@
+{
+  "name": "delivery-saga-azure-servicebus",
+  "version": "1.0.0",
+  "description": "Delivery App with Azure Service Bus Saga Pattern & Compensating Transactions",
+  "scripts": {
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install",
+    "start": "node server/app.js",
+    "client": "npm --prefix client run dev",
+    "server": "node server/app.js",
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"bgBlue.bold,bgCyan.bold\" \"npm run server\" \"npm run client\"",
+    "test:saga": "node server/testSaga.js"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
